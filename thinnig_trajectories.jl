@@ -239,7 +239,7 @@ end
 function max_rdi(d, θ, nbtree_max, target_rdi)
     rdi = DENS([d, target_rdi], θ) > nbtree_max ?
     RDI([d,nbtree_max], θ) :
-    0.7
+    target_rdi
     dens =DENS([d, rdi], θ)
     return rdi, dens
 end 
@@ -383,7 +383,8 @@ function merge_netcdf(folder::String,
 end
 
 
-eqpft(name::String, name2::String, name3::String, names4::Int64) = 
+eqpft(name::AbstractString, name2::AbstractString, 
+    name3::AbstractString, names4::Int64) = 
     name == "evergreen temperate conifer" && 
     name2 == "No recruitement" &&
     name3 == "high RDI" &&
@@ -407,47 +408,45 @@ eqpft(name::String, name2::String, name3::String, names4::Int64) =
 # Define an array of average diameter of a tree at various ages
 I1EC = CSV.read("sylviculture_Epicea_I1EC_V.csv", 
     DataFrame, missingstring="NaN" )
-dd = estimate_θrdi(I1EC, dia_lin, 45.0, 6, [1348.0, -0.57], 45000.0, 0.8, 3)
+dd1 = estimate_θrdi(I1EC, dia_lin, 45.0, 5, [1348.0, -0.57], 405000.0, 0.6, 3)
 
 
 I1EC = CSV.read("sylviculture_chene_reg.csv", 
     DataFrame, missingstring="NaN" )
-dd=estimate_θrdi(I1EC, dia_lin, 60.0, 3,[2000.0, -0.67], 15000.0, 0.6, 3).rdi
+dd2=estimate_θrdi(I1EC, dia_lin, 70.0, 3,[2000.0, -0.67], 45000.0, 0.4, 3)
 
 
-ORC_Rdi = merge_netcdf(ORC_folder, "RDI", "stomate")
-ORC_BA = merge_netcdf(ORC_folder, "BA", "stomate")
-ORC_diameter = merge_netcdf(ORC_folder, "DIAMETER", "stomate")
-ORC_dens = merge_netcdf(ORC_folder, "IND", "stomate")
+#ORC_Rdi = merge_netcdf(ORC_folder, "RDI", "stomate")
 
-ORC_Rdif = filter([:pft,:ver, :param, :time] => eqpft, ORC_Rdi)
-ORC_BAf = filter([:pft,:ver, :param, :time] => eqpft, ORC_BA)
-ORC_DIAf = filter([:pft,:ver, :param, :time] => eqpft, ORC_diameter)
-ORC_DENSf = filter([:pft,:ver, :param, :time] => eqpft, ORC_dens)
-
+ORC_Res = CSV.read("ORCHIDEE_res.csv", DataFrame, 
+    missingstring="NaN" )
+ORC_Resf = filter([:pft,:ver, :param, :time] => eqpft, ORC_Res)
+ORC_RDI = filter(:var=>(==("RDI")), ORC_Resf)
+ORC_BA = filter(:var=>(==("BA")), ORC_Resf)
+ORC_DIA = filter(:var=>(==("DIAMETER")), ORC_Resf)
+ORC_DEN = filter(:var=>(==("IND")), ORC_Resf)
 
 subplots = repeat([plot()], 4)
-
 p1 = plot(title="Rdi") 
-@df ORC_Rdif plot!(:time, :var, 
+@df ORC_RDI plot!(:time, :value, 
     group= (:param), ylim=(0.0,0.7), legend=false)
 plot!(dd.pre[1], ylim=(0.0,0.7), legend=false)
 subplots[1] = p1
 
 p2 = plot(title="Basal area")
-@df ORC_BAf plot!(:time, :var, 
+@df ORC_BA plot!(:time, :value, 
     group= (:param), ylim=(0.0,40.0), legend=false)
 plot!(BA([dd.Qdiameter,dd.pre[2]]), ylim=(0.0,40.0), legend=false)
 subplots[2] = p2
 
 p3 = plot(title="Quadratic diameter")
-@df ORC_DIAf plot!(:time, :var, 
+@df ORC_DIA plot!(:time, :value, 
     group= (:param), ylim=(0.0,0.4), legend=false)
 plot!(dd.Qdiameter/100, ylim=(0.0,0.4), legend=false)
 subplots[3] = p3
 
 p4 = plot(title="Stem density", legend_position=:topright)
-@df ORC_DENSf plot!(:time, :var, 
+@df ORC_DEN plot!(:time, :value, 
     group= (:param), ylim=(0.0,1.6), label="ORC")
 plot!(dd.pre[2]/10000, ylim=(0.0,1.6), label="THE")
 subplots[4] = p4
