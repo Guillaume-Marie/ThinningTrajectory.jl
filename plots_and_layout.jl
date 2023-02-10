@@ -1,42 +1,51 @@
-include("thinnig_trajectories.jl")
 
-using DataFrames
+include("thinnig_trajectories.jl")
 using Plots
 using StatsPlots
 
-function plot_ORCres(f::Forest, orc::DataFrame)
-    ORC_Resf = filter([:pft,:ver, :param, :time] => eqpft,orc)
-    ORC_RDI = filter(:var=>(==("RDI")), ORC_Resf)
-    ORC_BA = filter(:var=>(==("BA")), ORC_Resf)
-    ORC_DIA = filter(:var=>(==("DIAMETER")), ORC_Resf)
-    ORC_DEN = filter(:var=>(==("IND")), ORC_Resf)
+const dd = ["f.pre[1]",
+            "BA([f.Qdiameter,f.pre[2]])",
+            "f.Qdiameter/100",
+            "f.pre[2]/10000"
+            ]
 
-    subplots = repeat([plot()], 4)
-    p1 = plot(title="Rdi") 
-    @df ORC_RDI plot!(:time, :value, 
-        group= (:param), ylim=(0.0,0.7), legend=false)
-    plot!(f.pre[1], ylim=(0.0,0.7), legend=false)
-    subplots[1] = p1
+function eqpf2(name1, name2, name3, limit)
+    fun = String("eqpft(name::AbstractString, 
+                    name2::AbstractString, 
+                    name3::AbstractString, 
+                    names4::Int64) = 
+                        name == \"$name1\" && 
+                        name2 == \"$name2\" && 
+                        name3 == \"$name3\" && 
+                        names4 < $limit")
+    return @eval $(Meta.parse(fun))
+end
 
-    p2 = plot(title="Basal area")
-    @df ORC_BA plot!(:time, :value, 
-        group= (:param), ylim=(0.0,40.0), legend=false)
-    plot!(BA([f.Qdiameter,f.pre[2]]), ylim=(0.0,40.0), legend=false)
-    subplots[2] = p2
+function plot_ORCres(f::Forest, orc::DataFrame, 
+    pfts::AbstractString, recruit::AbstractString, 
+    param::AbstractString, time_limit::Int64, var::Vector{String})
 
-    p3 = plot(title="Quadratic diameter")
-    @df ORC_DIA plot!(:time, :value, 
-        group= (:param), ylim=(0.0,0.4), legend=false)
-    plot!(f.Qdiameter/100, ylim=(0.0,0.4), legend=false)
-    subplots[3] = p3
-
-    p4 = plot(title="Stem density", legend_position=:topright)
-    @df ORC_DEN plot!(:time, :value, 
-        group= (:param), ylim=(0.0,1.6), label="ORC")
-    plot!(f.pre[2]/10000, ylim=(0.0,1.6), label="THE")
-    subplots[4] = p4
-
-    display(plot(subplots..., layout=(2,2), size=(750, 750)))
+    eqpf2(pfts, recruit, param, time_limit)
+    ORC_Resf = filter([:pft,:ver, :param, :time] => ft, orc)
+    nrows = ceil(Int,0.5*length(var))
+    subplots = repeat([plot()], length(var))
+    show_legend = false
+    for i in eachindex(var)
+        show_legend = (i==length(var)) ? true : false
+        ORC_r = filter(:var=>(==(var[i])), ORC_Resf)
+        eval(Meta.parse("p$(var[i]) = plot(title=$(var[i]))")) 
+        @df ORC_r plot!(:time, :value, 
+            group= (:param), 
+            ylim=(0.0,maximum(eval(Meta.parse("$(dd[i])")))), 
+            legend=show_legend, label="ORC")
+            eval(Meta.parse("plot!($(dd[i]), 
+                        ylim=(0.0,maximum($(dd[i]))), 
+                        legend=$show_legend, 
+                        label = \"THE\"
+                        )"))
+        subplots[i] = eval(Meta.parse("p$var[i]"))
+    end
+    display(plot(subplots..., layout=(nrows,2), size=(375*nrows, 750)))
 end
 
 function visualize_sylviculture(f::Forest) 
@@ -67,10 +76,3 @@ function visualize_sylviculture(f::Forest)
     display(plot(subplots..., layout=(2,1), size=(500, 500)))
 end
 
-
-eqpft(name::AbstractString, name2::AbstractString, 
-    name3::AbstractString, names4::Int64) = 
-    name == "evergreen temperate conifer" && 
-    name2 == "No recruitement" &&
-    name3 == "high RDI" &&
-    names4 < 80
