@@ -1,4 +1,5 @@
 
+include("generic_function.jl")
 using LsqFit
 using Polynomials
 
@@ -277,30 +278,3 @@ function predict_sylviculture(f::Forest, nbyears::Int64,
     end
     return [rdi_m,dens_m]
 end
-
-function update_table(table, 
-    param::Array{Float64})
-
-    n, m = size(table)
-    @inbounds for i in 1:n, j in 1:m
-        idx = (i - 1) * m + j
-        if param[idx] > 0.0
-            table[i, j] = param[idx]
-        end
-    end
-    return table
-end
-
-# Define functions to model diameter growth
-@. dia_sig(x, θ) = θ[1] / (1 + exp(-θ[2] * x)) + θ[3]
-@. dia_log(x, θ) = θ[1] * log(x)
-@. dia_exp(x, θ) = exp(-θ[1] * x)
-@. dia_pow(x, θ) = x^θ[1] + θ[2]
-@. dia_lin(x, θ) = θ[1] * x 
-@. dia_poly(x, θ) = θ[1] + θ[2]* x + θ[3]* x^2 +  θ[4]* x^3
-@. RDI(d, θ) = d[2] / ((d[1] / θ[1])^(1.0 / θ[2]))
-@. DENS(d, θ) = d[2] * ((d[1] / θ[1])^(1.0 / θ[2]))
-@. BA(d) = pi*(d[1]/2)^2/10000*d[2]
-@. INT(d,n) = (d[1]/d[2])^(-1/n)
-@. NBC(d,x) = cld(log(d[1]/d[2]),log(x))
-@. DS(d,x,n) = d*x^(n)
