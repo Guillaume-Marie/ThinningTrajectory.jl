@@ -1,48 +1,9 @@
+
+include("plots_and_layout.jl")
+
 using LsqFit
 using Polynomials
-using Measurements
-using CSV
-using DataFrames
-using NCDatasets
 using FileIO
-using Plots
-using StatsPlots
-
-# Define a constant array of vegetation cover types
-const PFT = [
-    "bare_soil",
-    "evergreen temperate conifer",
-    "evergreen temperate conifer",
-    "evergreen temperate conifer",
-    "deciduous temperate broadleaved",
-    "deciduous temperate broadleaved",
-    "deciduous temperate broadleaved"
-]
-
-# Define a constant array of treatment types
-const traitement = [
-    "None",
-    "No recruitement",
-    "No recruitement",
-    "Recruitement",
-    "No recruitement",
-    "No recruitement",
-    "Recruitement"
-]
-
-# Define a constant array of parameter values
-const parameters = [
-    "None",
-    "Low RDI",
-    "high RDI",
-    "Low RDI",
-    "Low RDI",
-    "high RDI",
-    "Low RDI"
-]
-
-# Define a constant string with a path to a directory on the file system
-const ORC_folder= "/home/guigeek/Julia_script/orc/YE"
 
 """
 # Forest struct
@@ -115,7 +76,8 @@ function when_to_thin(f::Forest, fcounter::Int32,
 
     LTph = (f.Sphase == 1) ? 
         fld(f.Lph[f.Sphase],f.NBph[f.Sphase]) :
-        fld((f.Lph[f.Sphase]-f.Lph[f.Sphase-1]),f.NBph[f.Sphase])
+        fld((f.Lph[f.Sphase]-f.Lph[f.Sphase-1]),
+            f.NBph[f.Sphase])
      
     cut = f.stem_density[year] * f.RITph[f.Sphase]
     f.stem_density[year] -= 
@@ -134,8 +96,6 @@ function when_to_thin(f::Forest, fcounter::Int32,
 
     return fcounter, Pcounter
 end
-
-
 
 function when_to_thin_model(f::Forest, θ, year::Int64, dens_m)
     rdi = RDI([f.Qdiameter[year], dens_m], θ) 
@@ -196,14 +156,17 @@ end
  # create_forest(LTph, Dph, Lph, θ, nbyears)
  A function that creates a Forest struct with the given parameters.
 
- It calculates the thinning intensity for each phase using the `thin_intensity` function. It also initializes 
- the `stem_density`, `Sphase`, and `Qdiameter` fields of the `Forest` struct. It also applies a function to 
+ It calculates the thinning intensity for each phase using the 
+`thin_intensity` function. It also initializes 
+ the `stem_density`, `Sphase`, and `Qdiameter` fields of the 
+ `Forest` struct. It also applies a function to 
  the `Qdiameter` array to make sure the values are greater than 20.
  ## Parameters
  - `LTph::NTuple{4,T}`: The thinning frequency for each phase.
  - `Dph::NTuple{5,T}`: The target density at the phase ends. 
  - `Lph::NTuple{5,T}`: The age at which each phase ends. 
- - `θ::Vector{Float64}`: A Vector of parameters used to calculate the quadratic diameter.
+ - `θ::Vector{Float64}`: A Vector of parameters used to calculate 
+    the quadratic diameter.
  - `nbyears::Int64`: The number of years for which the forest is simulated.
 
  ## Returns
@@ -234,7 +197,6 @@ function create_forest(data, θ, mod, ny, dens_start, start)
         Polynomial(),Polynomial())
     return f
 end
-
 
 function max_rdi(d, θ, nbtree_max, target_rdi)
     rdi = DENS([d, target_rdi], θ) > nbtree_max ?
@@ -278,8 +240,8 @@ function fit_dia(mod, data::Vector{Float64}, harvest_year)
     return θ_est
 end
 
-function estimate_θrdi(sylvicutural_param, mod, 
-    data, start, selthin_est, max_dens, target_rdi, n_poly)
+function estimate_θrdi(sylvicutural_param::DataFrame, orc::DataFrame, 
+    mod, data, start, selthin_est, max_dens, target_rdi, n_poly)
 
     nbyears = trunc(Int, sylvicutural_param[4,4])
     # Find the best-fit parameters for the sigmoid function
@@ -302,35 +264,8 @@ function estimate_θrdi(sylvicutural_param, mod,
     f1.pre = predict_sylviculture(f1, nbyears, selthin_est, 
         dens_start, rdi_start)
     visualize_sylviculture(f1)
+    plot_ORCres(f1, orc)
     return f1
-end
-
-function visualize_sylviculture(f::Forest) 
-    
-    subplots = repeat([plot()], 2)
-    pl = plot()        
-    dia_max = maximum(f.Qdiameter.+5.0)
-    rdi_max = maximum(f.upper_rdi[2].+0.1)
-    # Plot the stem density and quadratic diameter of the forest
-    plot!(f.stem_density, color="black",legend = false)
-    plot!(f.pre[2])
-    plot!(twinx(),BA([f.Qdiameter,f.pre[2]]),
-        ylim=(0,dia_max), color="orange")  
-    plot!(twinx(),f.Qdiameter,legend = false, ylim=(0,dia_max))
-    subplots[1] = pl
-
-    plll = plot()
-    plot!(f.Qdiameter,f.rdi, xlim=(0,dia_max), 
-        ylim=(0,rdi_max))
-    plot!(twinx(),f.Qdiameter,f.pre[1], xlim=(0,dia_max), 
-        ylim=(0,rdi_max), color="green")  
-    plot!(twinx(),f.rdi_up, color="red", xlim=(0,dia_max), 
-        ylim=(0,rdi_max), legend=false)
-    plot!(twinx(),f.rdi_lo, color="blue", xlim=(0,dia_max), 
-        ylim=(0,rdi_max), legend=false)
-    subplots[2] = plll
-   
-    display(plot(subplots..., layout=(2,1), size=(500, 500)))
 end
 
 function predict_sylviculture(f::Forest, nbyears::Int64, 
@@ -340,7 +275,8 @@ function predict_sylviculture(f::Forest, nbyears::Int64,
     dens_m = fill(dens_start, nbyears)
     for j in 2:nbyears
         rdi_m[j],dens_m[j] = 
-        when_to_thin_model(f, selthin_est, j, dens_m[j-1])
+        when_to_thin_model(f, selthin_est, 
+        j, dens_m[j-1])
     end
     return [rdi_m,dens_m]
 end
@@ -358,38 +294,6 @@ function update_table(table,
     return table
 end
 
-function merge_netcdf(folder::String, 
-    v::String, Out::String)
-
-    files = readdir(folder)
-    data = DataFrame(var=Float32[],
-    ver=String[], pft=String[], param=String[], 
-    time=Int64[])
-    i=1
-    for file in files
-        if occursin(Out, file)
-            ds = Dataset(joinpath(folder, file))
-            dsv = ds[v].var[:,:][2:end]
-            ldsv = length(dsv)
-            vi = reshape(dsv, ldsv)
-            dd = DataFrame(var=vi, ver=traitement[2:end],
-            pft=PFT[2:end], param=parameters[2:end],
-            time= fill(i,ldsv))
-            data = vcat(data, dd)
-        end
-        i += 1
-    end
-    return data
-end
-
-
-eqpft(name::AbstractString, name2::AbstractString, 
-    name3::AbstractString, names4::Int64) = 
-    name == "evergreen temperate conifer" && 
-    name2 == "No recruitement" &&
-    name3 == "high RDI" &&
-    names4 < 80
-
 # Define functions to model diameter growth
 @. dia_sig(x, θ) = θ[1] / (1 + exp(-θ[2] * x)) + θ[3]
 @. dia_log(x, θ) = θ[1] * log(x)
@@ -403,52 +307,3 @@ eqpft(name::AbstractString, name2::AbstractString,
 @. INT(d,n) = (d[1]/d[2])^(-1/n)
 @. NBC(d,x) = cld(log(d[1]/d[2]),log(x))
 @. DS(d,x,n) = d*x^(n)
-
-
-# Define an array of average diameter of a tree at various ages
-I1EC = CSV.read("sylviculture_Epicea_I1EC_V.csv", 
-    DataFrame, missingstring="NaN" )
-dd1 = estimate_θrdi(I1EC, dia_lin, 45.0, 5, [1348.0, -0.57], 405000.0, 0.6, 3)
-
-
-I1EC = CSV.read("sylviculture_chene_reg.csv", 
-    DataFrame, missingstring="NaN" )
-dd2=estimate_θrdi(I1EC, dia_lin, 70.0, 3,[2000.0, -0.67], 45000.0, 0.4, 3)
-
-
-#ORC_Rdi = merge_netcdf(ORC_folder, "RDI", "stomate")
-
-ORC_Res = CSV.read("ORCHIDEE_res.csv", DataFrame, 
-    missingstring="NaN" )
-ORC_Resf = filter([:pft,:ver, :param, :time] => eqpft, ORC_Res)
-ORC_RDI = filter(:var=>(==("RDI")), ORC_Resf)
-ORC_BA = filter(:var=>(==("BA")), ORC_Resf)
-ORC_DIA = filter(:var=>(==("DIAMETER")), ORC_Resf)
-ORC_DEN = filter(:var=>(==("IND")), ORC_Resf)
-
-subplots = repeat([plot()], 4)
-p1 = plot(title="Rdi") 
-@df ORC_RDI plot!(:time, :value, 
-    group= (:param), ylim=(0.0,0.7), legend=false)
-plot!(dd.pre[1], ylim=(0.0,0.7), legend=false)
-subplots[1] = p1
-
-p2 = plot(title="Basal area")
-@df ORC_BA plot!(:time, :value, 
-    group= (:param), ylim=(0.0,40.0), legend=false)
-plot!(BA([dd.Qdiameter,dd.pre[2]]), ylim=(0.0,40.0), legend=false)
-subplots[2] = p2
-
-p3 = plot(title="Quadratic diameter")
-@df ORC_DIA plot!(:time, :value, 
-    group= (:param), ylim=(0.0,0.4), legend=false)
-plot!(dd.Qdiameter/100, ylim=(0.0,0.4), legend=false)
-subplots[3] = p3
-
-p4 = plot(title="Stem density", legend_position=:topright)
-@df ORC_DEN plot!(:time, :value, 
-    group= (:param), ylim=(0.0,1.6), label="ORC")
-plot!(dd.pre[2]/10000, ylim=(0.0,1.6), label="THE")
-subplots[4] = p4
-
-display(plot(subplots..., layout=(2,2), size=(750, 750)))
