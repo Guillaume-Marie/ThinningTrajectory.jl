@@ -1,6 +1,7 @@
 
 include("generic_function.jl")
 using LsqFit
+using DataFrames
 using Polynomials
 
 """
