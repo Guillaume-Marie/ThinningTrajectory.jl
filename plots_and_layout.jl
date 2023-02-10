@@ -1,4 +1,4 @@
-
+include("thinnig_trajectories.jl")
 
 using DataFrames
 using Plots

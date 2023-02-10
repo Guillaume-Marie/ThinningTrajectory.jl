@@ -62,4 +62,4 @@ function merge_netcdf(folder::String,
     return data
 end
 
-ORC_Rdi = merge_netcdf(ORC_folder, "RDI", "stomate")
+#ORC_Rdi = merge_netcdf(ORC_folder, "RDI", "stomate")
