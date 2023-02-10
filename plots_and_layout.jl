@@ -3,12 +3,6 @@ include("thinnig_trajectories.jl")
 using Plots
 using StatsPlots
 
-const dd = ["f.pre[1]",
-            "BA([f.Qdiameter,f.pre[2]])",
-            "f.Qdiameter/100",
-            "f.pre[2]/10000"
-            ]
-
 function eqpf2(name1, name2, name3, limit)
     fun = String("eqpft(name::AbstractString, 
                     name2::AbstractString, 
@@ -23,27 +17,33 @@ end
 
 function plot_ORCres(f::Forest, orc::DataFrame, 
     pfts::AbstractString, recruit::AbstractString, 
-    param::AbstractString, time_limit::Int64, var::Vector{String})
-
+    param::AbstractString, time_limit::Int64, v::Vector{String})
+    
+    dd = [
+        f.pre[1],
+        BA([f.Qdiameter,f.pre[2]]),
+        f.Qdiameter/100,
+        f.pre[2]/10000
+    ]
     eqpf2(pfts, recruit, param, time_limit)
-    ORC_Resf = filter([:pft,:ver, :param, :time] => ft, orc)
-    nrows = ceil(Int,0.5*length(var))
-    subplots = repeat([plot()], length(var))
+    ORC_Resf = filter([:pft,:ver, :param, :time] => eqpft, orc)
+    nrows = ceil(Int,0.5*length(v))
+    subplots = repeat([plot()], length(v))
     show_legend = false
-    for i in eachindex(var)
-        show_legend = (i==length(var)) ? true : false
-        ORC_r = filter(:var=>(==(var[i])), ORC_Resf)
-        eval(Meta.parse("p$(var[i]) = plot(title=$(var[i]))")) 
-        @df ORC_r plot!(:time, :value, 
+    for i in eachindex(v)
+        show_legend = (i==length(v)) ? true : false
+        ORC_r = filter(:var=>(==(v[i])), ORC_Resf)
+        maxval = maximum(ORC_r[:,"value"]) + 
+            0.25 * maximum(ORC_r[:,"value"])
+        subplots[i] = begin
+            @df ORC_r plot(:time, :value, 
             group= (:param), 
-            ylim=(0.0,maximum(eval(Meta.parse("$(dd[i])")))), 
+            ylim=(0.0,maxval), 
             legend=show_legend, label="ORC")
-            eval(Meta.parse("plot!($(dd[i]), 
-                        ylim=(0.0,maximum($(dd[i]))), 
-                        legend=$show_legend, 
-                        label = \"THE\"
-                        )"))
-        subplots[i] = eval(Meta.parse("p$var[i]"))
+            plot!(dd[i], ylim=(0.0,maxval), 
+                legend=show_legend, 
+                label = "THE")
+        end
     end
     display(plot(subplots..., layout=(nrows,2), size=(375*nrows, 750)))
 end

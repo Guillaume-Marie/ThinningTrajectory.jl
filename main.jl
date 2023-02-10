@@ -1,6 +1,6 @@
 
-
 include("thinnig_trajectories.jl")
+include("plots_and_layout.jl")
 include("process_ORCHIDEE_results.jl")
 using CSV
 
