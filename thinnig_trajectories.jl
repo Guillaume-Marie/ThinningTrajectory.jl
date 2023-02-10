@@ -1,6 +1,4 @@
 
-include("plots_and_layout.jl")
-
 using LsqFit
 using Polynomials
 using FileIO
@@ -44,6 +42,8 @@ mutable struct Forest{T}
     rdi_up::Polynomial
     rdi_lo::Polynomial
 end
+
+include("plots_and_layout.jl")
 
 """
 # when_to_thin(f, fcounter) 
