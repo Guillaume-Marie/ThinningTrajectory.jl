@@ -1,6 +1,7 @@
 
 
 include("thinnig_trajectories.jl")
+include("process_ORCHIDEE_results.jl")
 using CSV
 
 # Define an array of average diameter of a tree at various ages
