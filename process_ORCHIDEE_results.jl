@@ -1,6 +1,6 @@
 
 using NCDatasets
-
+using CSV
 """
 # merge_netcdf
 The function `merge_netcdf` reads netcdf files from 
@@ -50,5 +50,3 @@ function merge_netcdf(folder::String,
     return data
 end
 
-ORC_RES = merge_netcdf(ORC_folder, ["RDI","BA","DIAMETER","IND"], "stomate")
-CSV.write("ORCHIDEE_res2.csv", ORC_RES)

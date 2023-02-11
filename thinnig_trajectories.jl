@@ -302,9 +302,7 @@ function estimate_θrdi(sylvicutural_param::DataFrame, orc::DataFrame,
     f1.rdi_lo = fit(f1.lower_rdi[1],f1.lower_rdi[2], n_poly)
     f1.pre = predict_sylviculture(f1, nbyears, selthin_est, 
         dens_start, rdi_start)
-    visualize_sylviculture(f1)
-    plot_ORCres(f1, orc, "evergreen temperate conifer", "No recruitement", 
-    "Low RDI", nbyears,["RDI","BA","DIAMETER","IND"])
+    merge_previous_plots(f1, orc, nbyears)
     return f1
 end
 
