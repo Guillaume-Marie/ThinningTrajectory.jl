@@ -4,8 +4,11 @@ include("forest_def.jl")
 using LsqFit
 using DataFrames
 
+const dia_zero = 1.0e-5
+
 """
-# when_to_thin(f, fcounter) 
+# when_to_thin
+    (f, fcounter) 
 This function updates the stem density of a forest.
 
 It updates the `stem_density` field of the `Forest` 
@@ -28,8 +31,8 @@ is not negative.
 - `fcounter`: The updated counter.
 - `Pcounter`: The updated counter for the phases.
 """
-function when_to_thin(f::Forest, fcounter::Int32, 
-    Pcounter::Int32, year::Int64)
+function when_to_thin(f::Forest, fcounter::Int64, 
+    Pcounter::Int64, year::Int64)
     
     f.stem_density[year] = max(f.stem_density[year-1], 0.0)
 
@@ -56,18 +59,41 @@ function when_to_thin(f::Forest, fcounter::Int32,
     return fcounter, Pcounter
 end
 
+"""
+# when_to_thin_model
+    (f::Forest, θ, year::Int64, dens_m)
+Calculate the RDI and new density for a forest, given a 
+year and diameter, using the forest and model parameters.
+
+## Parameters:
+- f : Forest
+    A forest object that contains the necessary 
+    information such as `Qdiameter`.
+- θ : Any
+    Model parameters.
+- year : Int64
+    The year for which the RDI and new density 
+        is calculated.
+- dens_m : Float64
+    The density used in the calculation.
+
+## Returns:
+- Tuple of the RDI and the new density.
+"""
 function when_to_thin_model(f::Forest, θ, year::Int64, dens_m)
     rdi = RDI([f.Qdiameter[year], dens_m], θ) 
-    if rdi > f.rdi_up(f.Qdiameter[year])
-        rdi = f.rdi_lo(f.Qdiameter[year])
+    rdi_up = f.rdi_up(f.Qdiameter[year])
+    rdi_lo = f.rdi_lo(f.Qdiameter[year])
+    if rdi > rdi_up
+        rdi = rdi_lo
         dens_m = DENS([f.Qdiameter[year], rdi], θ)
     end
-    dens_m = DENS([f.Qdiameter[year], rdi], θ)
     return rdi, dens_m
 end
 
 """
- # thin_intensity(LTph, Dph, Lph, phase)
+ # thin_intensity
+    (LTph, Dph, Lph, phase)
   A function that calculates the thinning intensity for a given sylviculture phase.
   It calculates the thinning intensity by dividing the difference between 
   the minimum and maximum quadratic diameter at the end of a phase 
@@ -87,6 +113,11 @@ function thin_intensity(Dph, NBph, phase, Dst)
         (Dst - Dph[phase]) / NBph[phase] :
         (Dph[phase-1] - Dph[phase]) / NBph[phase]
     return ITph
+end
+
+function thin_param(Dph::Float64, Dst::Float64, 
+    RITph::Float64, NBph::Float64)
+    return RITph, NBph, Dph
 end
 
 function thin_param(Dph::Float64, Dst::Float64, 
@@ -112,7 +143,8 @@ function replace_negatives_with_zeros(x)
     return x
 end
 """
- # create_forest(LTph, Dph, Lph, θ, nbyears)
+ # create_forest
+    (LTph, Dph, Lph, θ, nbyears)
  A function that creates a Forest struct with the given parameters.
 
  It calculates the thinning intensity for each phase using the 
@@ -126,7 +158,8 @@ end
  - `Lph::NTuple{5,T}`: The age at which each phase ends. 
  - `θ::Vector{Float64}`: A Vector of parameters used to calculate 
     the quadratic diameter.
- - `nbyears::Int64`: The number of years for which the forest is simulated.
+ - `nbyears::Int64`: The number of years for which the forest is 
+ simulated.
 
  ## Returns
  - `f`: The created forest.
@@ -157,6 +190,26 @@ function create_forest(data, θ, mod, ny, dens_start, start)
     return f
 end
 
+"""
+# Function max_rdi
+    (d, θ, nbtree_max, target_rdi)
+Computes the maximum RDI and the corresponding basal 
+area density given a diameter at breast height (d), 
+a vector of parameters (θ), 
+the maximum number of trees per hectare (nbtree_max), 
+and a target RDI (target_rdi).
+
+## Args:
+d: Diameter at breast height (d), a float
+θ: Vector of parameters (θ), a vector of floats
+nbtree_max: Maximum number of trees per hectare 
+(nbtree_max), a float
+target_rdi: Target RDI (target_rdi), a float
+
+## Returns:
+rdi: maximum RDI, a float
+dens: the corresponding basal area density, a float
+"""
 function max_rdi(d, θ, nbtree_max, target_rdi)
     rdi = DENS([d, target_rdi], θ) > nbtree_max ?
     RDI([d,nbtree_max], θ) :
@@ -181,24 +234,60 @@ function get_decrease_values(f::Forest)
 end
 
 function fit_dia(mod, data::Vector{Vector{Float64}}, harvest_year)
-    σ_fit = LsqFit.curve_fit(mod, data[2], data[1], zeros(4))
-    θ_est = coef(σ_fit)
-    return θ_est
+    return fit_dia_int(mod, data[2], data[1], harvest_year)
 end
 
 function fit_dia(mod, data::Float64, harvest_year)
-    σ_fit = LsqFit.curve_fit(mod, [0.0, harvest_year],
-        [0.00001,data], zeros(4))
-    θ_est = coef(σ_fit)
-    return θ_est
+    return fit_dia_int(mod, [0.0, harvest_year], 
+        [dia_zero, data], harvest_year)
 end
 
 function fit_dia(mod, data::Vector{Float64}, harvest_year)
-    σ_fit = LsqFit.curve_fit(mod, [0.0,data[2]],[0.00001,data[1]], zeros(4)) 
-    θ_est = coef(σ_fit)
-    return θ_est
+    return fit_dia_int(mod, [0.0, data[2]],
+        [dia_zero, data[1]], harvest_year)
 end
 
+function fit_dia_int(mod, xdata, ydata, harvest_year)
+    if !isa(mod, Function)
+        error("mod must be a function")
+    end
+    if !isa(xdata, AbstractArray) || !isa(ydata, AbstractArray)
+        error("xdata and ydata must be arrays")
+    end
+    if !isa(harvest_year, Number)
+        error("harvest_year must be a number")
+    end
+    return coef(LsqFit.curve_fit(mod, xdata, ydata, zeros(4)))
+end
+
+""" 
+# Function  estimate_θrdi
+    (sylvicutural_param::DataFrame, orc::DataFrame, 
+    mod, data, start, selthin_est, max_dens, target_rdi, n_poly)
+ Given sylvicultural parameters, observational data, 
+ and thinning model,
+the function calculates the RDI variable, fits upper 
+    and lower bounds of the RDI, 
+predicts the sylvicultural evolution of a forest, and 
+generates plots.
+
+## Parameters:
+- sylvicutural_param (DataFrame): A data frame containing 
+sylvicultural parameters
+- orc (DataFrame): A data frame containing observational data
+- mod (function): A model for diameter at a given year
+- data (Array{Float64}): Data used to fit the diameter model
+- start (Int64): Starting year for the calculation
+- selthin_est (Float64): An estimated thinning parameter
+- max_dens (Float64): Maximum stem density
+- target_rdi (Float64): Target RDI
+- n_poly (Int64): Polynomial degree for fitting the 
+upper and lower bounds
+
+## Returns:
+- f1 (Forest): A `Forest` object with calculated 
+variables and plotted results
+"""
 function estimate_θrdi(sylvicutural_param::DataFrame, orc::DataFrame, 
     mod, data, start, selthin_est, max_dens, target_rdi, n_poly)
 
@@ -210,8 +299,8 @@ function estimate_θrdi(sylvicutural_param::DataFrame, orc::DataFrame,
         max_rdi(dia_start, selthin_est, max_dens, target_rdi)
     f1 = create_forest(sylvicutural_param, 
         θ_est, mod, nbyears, dens_start, start)
-    fcounter::Int32 = 2
-    Pcounter::Int32 = 2
+    fcounter = 2
+    Pcounter = 2
     for year in 2:nbyears
         fcounter, Pcounter = when_to_thin(f1, fcounter, Pcounter, year)
     end
@@ -228,6 +317,21 @@ function estimate_θrdi(sylvicutural_param::DataFrame, orc::DataFrame,
     return f1
 end
 
+"""
+# predict_sylviculture
+Predict the results of a sylviculture operation.
+
+## Parameters:
+f (Forest): A forest object with the input parameters.
+nbyears (Int64): Total number of years of sylviculture operation.
+selthin_est (Array): Array of estimated parameters for the sigmoid function.
+dens_start (Float64): Initial stem density of the forest.
+rdi_start (Float64): Initial RDI of the forest.
+
+## Returns:
+Array: A 2D array with the results of RDI and stem density after each year of the sylviculture operation.
+
+"""
 function predict_sylviculture(f::Forest, nbyears::Int64, 
     selthin_est, dens_start::Float64, rdi_start::Float64) 
 
