@@ -4,11 +4,8 @@ include("forest_def.jl")
 using LsqFit
 using DataFrames
 
-const dia_zero = 1.0e-5
-
 """
 # when_to_thin
-    (f, fcounter) 
 This function updates the stem density of a forest.
 
 It updates the `stem_density` field of the `Forest` 
@@ -61,7 +58,6 @@ end
 
 """
 # when_to_thin_model
-    (f::Forest, θ, year::Int64, dens_m)
 Calculate the RDI and new density for a forest, given a 
 year and diameter, using the forest and model parameters.
 
@@ -93,7 +89,6 @@ end
 
 """
  # thin_intensity
-    (LTph, Dph, Lph, phase)
   A function that calculates the thinning intensity for a given sylviculture phase.
   It calculates the thinning intensity by dividing the difference between 
   the minimum and maximum quadratic diameter at the end of a phase 
@@ -144,7 +139,6 @@ function replace_negatives_with_zeros(x)
 end
 """
  # create_forest
-    (LTph, Dph, Lph, θ, nbyears)
  A function that creates a Forest struct with the given parameters.
 
  It calculates the thinning intensity for each phase using the 
@@ -192,7 +186,6 @@ end
 
 """
 # Function max_rdi
-    (d, θ, nbtree_max, target_rdi)
 Computes the maximum RDI and the corresponding basal 
 area density given a diameter at breast height (d), 
 a vector of parameters (θ), 
@@ -262,8 +255,6 @@ end
 
 """ 
 # Function  estimate_θrdi
-    (sylvicutural_param::DataFrame, orc::DataFrame, 
-    mod, data, start, selthin_est, max_dens, target_rdi, n_poly)
  Given sylvicultural parameters, observational data, 
  and thinning model,
 the function calculates the RDI variable, fits upper 
