@@ -33,6 +33,7 @@ function plot_ORCres(f::Forest, orc::DataFrame,
     for i in eachindex(v)
         show_legend = (i==length(v)) ? true : false
         ORC_r = filter(:var=>(==(v[i])), ORC_Resf)
+        println(ORC_Resf)
         maxval = maximum(ORC_r[:,"value"]) + 
             0.25 * maximum(ORC_r[:,"value"])
         subplots[i] = begin
