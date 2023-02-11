@@ -111,7 +111,7 @@ function visualize_sylviculture(f::Forest)
     dia_max = maximum(f.Qdiameter.+5.0)
     dens_max = maximum(f.stem_density.+500.0)
     rdi_max = maximum(f.upper_rdi[2].+0.1)
-    
+
     # Create subplots for a dual-axis plot
     subplots = repeat([plot()], 2)
     pl = plot()
@@ -123,10 +123,10 @@ function visualize_sylviculture(f::Forest)
     plot!(f.pre[2], label="predicted Density", combine=true,
     ylim=(0,dens_max))
     plot!(twinx(),f.Qdiameter,label="Quadratic diameter", 
-    ylim=(0,dia_max))
-    plot!(BA([f.Qdiameter,f.pre[2]]), 
+    ylim=(0,dia_max), combine=true)
+    plot!(twinx(),BA([f.Qdiameter,f.pre[2]]), 
     ylim=(0,dia_max), color="orange", 
-    label="predicted BA")  
+    label="predicted BA", legend=:topleft)  
     subplots[1] = pl
     
     plll = plot()
@@ -136,16 +136,16 @@ function visualize_sylviculture(f::Forest)
     #then store it in the other subplot
     # merge legend from both plots into one legend 
     plot!(f.Qdiameter,f.rdi, xlim=(0,dia_max), 
-    ylim=(0,rdi_max), label="RDI",legend=:topleft)
+    ylim=(0,rdi_max), label="RDI",legend=:topright)
     plot!(f.Qdiameter,f.pre[1], xlim=(0,dia_max), 
     ylim=(0,rdi_max), color="green", 
-    label="predicted RDI", legend=:topright)  
+    label="predicted RDI")  
     plot!(f.rdi_up, color="red", xlim=(0,dia_max), 
     ylim=(0,rdi_max), label="Upper bound")
     plot!(f.rdi_lo, color="blue", xlim=(0,dia_max), 
     ylim=(0,rdi_max), label="Lower bound")
     subplots[2] = plll
-    
+
     # Create and display the final dual-axis plot
     return plot(subplots..., layout=(2,1), size=(500, 750))
 end
