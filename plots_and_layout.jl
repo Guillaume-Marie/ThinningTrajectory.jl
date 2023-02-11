@@ -15,10 +15,38 @@ function eqpf2(name1, name2, name3, limit)
     return @eval $(Meta.parse(fun))
 end
 
-function plot_ORCres(f::Forest, orc::DataFrame, 
-    pfts::AbstractString, recruit::AbstractString, 
-    param::AbstractString, time_limit::Int64, v::Vector{String})
-    
+"""
+# plot_ORCres
+Visualizes forest stem density and quadratic 
+diameter, as well as results from an ORC model.
+
+## Parameters
+----------
+f : Forest
+    Instance of type Forest. 
+orc: DataFrame
+    DataFrame containing model runs.
+pfts : AbstractString
+    ID of the planted forest type used in the model.
+recruit : AbstractString
+    ID of the recruited forest type used in the model.
+param : AbstractString
+    ID of the response parameter used in the model.
+time_limit : Int64 
+    The ending time for the model.
+v : Vector{String}
+    Vector containing labels for the model parameters.
+
+## Returns
+-------
+Subplots : tuple
+    A tuple of subplots.
+"""
+function plot_ORCres(f::Forest, orc::DataFrame,
+            pfts::AbstractString, recruit::AbstractString, 
+            param::AbstractString, time_limit::Int64, 
+            v::Vector{String})
+    # Get the data for plotting
     dd = [
         f.pre[1],
         BA([f.Qdiameter,f.pre[2]]),
@@ -27,53 +55,79 @@ function plot_ORCres(f::Forest, orc::DataFrame,
     ]
     eqpf2(pfts, recruit, param, time_limit)
     ORC_Resf = filter([:pft,:ver, :param, :time] => eqpft, orc)
+    
+    # Calculate the number of rows to use in the subplot grid
     nrows = ceil(Int,0.5*length(v))
+    
+    # Create an array of Plots
     subplots = repeat([plot()], length(v))
+    
+    # Show the legend for the last plot in the series only
     show_legend = false
+    
+    # Iterate over the ORC data to create a subplot for each variable
     for i in eachindex(v)
-        show_legend = (i==length(v)) ? true : false
         ORC_r = filter(:var=>(==(v[i])), ORC_Resf)
-        println(ORC_Resf)
-        maxval = maximum(ORC_r[:,"value"]) + 
-            0.25 * maximum(ORC_r[:,"value"])
+        
+        # Calculate the max value for the y-axis of each subplot
+        maxval = maximum(ORC_r[:,"value"]) + 0.25 * maximum(ORC_r[:,"value"])
+        
+        # Set show_legend to true for the last subplot
+        show_legend = (i==length(v)) ? true : false
+        
+        # Construct and store the subplot in the subplots array
         subplots[i] = begin
-            @df ORC_r plot(:time, :value, 
-            group= (:param), 
-            ylim=(0.0,maxval), 
-            legend=show_legend, label="ORC")
+            @df ORC_r plot(:time, :value,
+                           group= (:param), 
+                           ylim=(0.0,maxval), 
+                           legend=show_legend, label="ORC")
             plot!(dd[i], ylim=(0.0,maxval), 
-                legend=show_legend, 
-                label = "THE")
+                  legend=show_legend, 
+                  label = "THE")
         end
     end
+    
+    # Display the subplots in a grid layout with dimensions specified by nrows
     display(plot(subplots..., layout=(nrows,2), size=(375*nrows, 750)))
 end
 
+"""
+# visualize_sylviculture
+Visualizes foresr data. RDI and BDI are shown 
+on separate plots, each overlayed with stem density data.
+
+## Parameters
+----------
+f: Forest 
+    The forest to be visualized. 
+"""
 function visualize_sylviculture(f::Forest) 
     
-    subplots = repeat([plot()], 2)
-    pl = plot()        
+    # Calculate the maximums of forest data
     dia_max = maximum(f.Qdiameter.+5.0)
     rdi_max = maximum(f.upper_rdi[2].+0.1)
-    # Plot the stem density and quadratic diameter of the forest
+    
+    # Create subplots for a dual-axis plot
+    subplots = repeat([plot()], 2)
+    pl = plot()
+    
+    # Plot the stem density and quadratic diameter of the forest, then store each in its own subplot
     plot!(f.stem_density, color="black",legend = false)
     plot!(f.pre[2])
-    plot!(twinx(),BA([f.Qdiameter,f.pre[2]]),
-        ylim=(0,dia_max), color="orange")  
+    plot!(twinx(),BA([f.Qdiameter,f.pre[2]]), ylim=(0,dia_max), color="orange")  
     plot!(twinx(),f.Qdiameter,legend = false, ylim=(0,dia_max))
     subplots[1] = pl
-
+    
     plll = plot()
-    plot!(f.Qdiameter,f.rdi, xlim=(0,dia_max), 
-        ylim=(0,rdi_max))
-    plot!(twinx(),f.Qdiameter,f.pre[1], xlim=(0,dia_max), 
-        ylim=(0,rdi_max), color="green")  
-    plot!(twinx(),f.rdi_up, color="red", xlim=(0,dia_max), 
-        ylim=(0,rdi_max), legend=false)
-    plot!(twinx(),f.rdi_lo, color="blue", xlim=(0,dia_max), 
-        ylim=(0,rdi_max), legend=false)
+    
+    # Plot the quadratic diameter against rdi, along with upper & lower bounds of rdi, then store it in the other subplot
+    plot!(f.Qdiameter,f.rdi, xlim=(0,dia_max), ylim=(0,rdi_max))
+    plot!(twinx(),f.Qdiameter,f.pre[1], xlim=(0,dia_max), ylim=(0,rdi_max), color="green")  
+    plot!(twinx(),f.rdi_up, color="red", xlim=(0,dia_max), ylim=(0,rdi_max), legend=false)
+    plot!(twinx(),f.rdi_lo, color="blue", xlim=(0,dia_max), ylim=(0,rdi_max), legend=false)
     subplots[2] = plll
-   
+    
+    # Create and display the final dual-axis plot
     display(plot(subplots..., layout=(2,1), size=(500, 500)))
 end
 
