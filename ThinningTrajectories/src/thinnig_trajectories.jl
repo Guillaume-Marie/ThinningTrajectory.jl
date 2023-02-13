@@ -1,8 +1,7 @@
 
+include("constant.jl")
 include("generic_function.jl")
 include("forest_def.jl")
-using LsqFit
-using DataFrames
 
 """
 # when_to_thin
@@ -159,7 +158,7 @@ end
  - `f`: The created forest.
  - `nbyears`: The number of years for which the forest is simulated.
 """
-function create_forest(data, θ, mod, ny, dens_start, start)
+function create_forest(data, θ, ny, dens_start, start; mod=dia_lin)
 
     data = Array(data)
     RITph = fill(0.0, length(data[1,:])) 
@@ -280,7 +279,7 @@ upper and lower bounds
 variables and plotted results
 """
 function estimate_θrdi(sylvicutural_param::DataFrame, orc::DataFrame, 
-    mod, data, start, selthin_est, max_dens, target_rdi, n_poly)
+    data, start, selthin_est, max_dens, target_rdi, n_poly; mod=dia_lin)
 
     nbyears = trunc(Int, sylvicutural_param[4,4])
     # Find the best-fit parameters for the sigmoid function
@@ -289,7 +288,7 @@ function estimate_θrdi(sylvicutural_param::DataFrame, orc::DataFrame,
     rdi_start, dens_start = 
         max_rdi(dia_start, selthin_est, max_dens, target_rdi)
     f1 = create_forest(sylvicutural_param, 
-        θ_est, mod, nbyears, dens_start, start)
+        θ_est, nbyears, dens_start, start; mod=mod)
     fcounter = 2
     Pcounter = 2
     for year in 2:nbyears
@@ -302,7 +301,7 @@ function estimate_θrdi(sylvicutural_param::DataFrame, orc::DataFrame,
     f1.rdi_lo = fit(f1.lower_rdi[1],f1.lower_rdi[2], n_poly)
     f1.pre = predict_sylviculture(f1, nbyears, selthin_est, 
         dens_start, rdi_start)
-    merge_previous_plots(f1, orc, nbyears)
+    #merge_previous_plots(f1, orc, nbyears)
     return f1
 end
 

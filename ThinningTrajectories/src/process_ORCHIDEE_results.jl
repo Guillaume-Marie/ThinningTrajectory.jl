@@ -1,6 +1,4 @@
 
-using NCDatasets
-using CSV
 """
 # merge_netcdf
 The function `merge_netcdf` reads netcdf files from 

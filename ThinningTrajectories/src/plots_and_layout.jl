@@ -1,7 +1,4 @@
 
-include("thinnig_trajectories.jl")
-using Plots
-using StatsPlots
 
 function eqpf2(name1, name2, name3, limit)
     fun = String("eqpft(name::AbstractString, 

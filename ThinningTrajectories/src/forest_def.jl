@@ -1,4 +1,3 @@
-using Polynomials
 
 """
 # Forest struct
