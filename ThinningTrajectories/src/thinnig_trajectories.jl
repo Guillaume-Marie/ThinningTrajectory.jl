@@ -2,7 +2,6 @@
 include("constant.jl")
 include("generic_function.jl")
 include("forest_def.jl")
-
 """
 # when_to_thin
 This function updates the stem density of a forest.
@@ -158,29 +157,21 @@ end
  - `f`: The created forest.
  - `nbyears`: The number of years for which the forest is simulated.
 """
-function create_forest(data, θ, ny, dens_start, start; mod=dia_lin)
+function create_forest(PFT, syl_par::Dict, θ, ny, 
+    densstart, start; mod=dia_lin)
 
-    data = Array(data)
-    RITph = fill(0.0, length(data[1,:])) 
-    NBph = fill(0.0, length(data[1,:]))
-    Dph = fill(0.0, length(data[1,:])) 
-    Lph::Vector{Float64} = data[4,:]
-    stem_density = fill(dens_start, ny) 
-    Sphase::Int16 = 1
+    for (key, value) in syl_par
+		asi_param(syl_par, key, value) 
+	end 
     Qdiameter = collect(mod(start:ny+(start-1), θ))
     Qdiameter = replace_negatives_with_zeros(Qdiameter)
-    for i in eachindex(data[1,:])
+    for i in eachindex(Dph)
         RITph[i], NBph[i], Dph[i] = (i == 1) ?
-        thin_param(data[3,i],dens_start,data[2,i],data[1,i]) :
-        thin_param(data[3,i],data[3,i-1],data[2,i],data[1,i])
+        thin_param(Dph[i],densstart,RITph[i],NBph[i]) :
+        thin_param(Dph[i],Dph[i-1],RITph[i],NBph[i])
     end
-    println(typeof(Qdiameter))
-    f = Forest(NBph, Dph, Lph , RITph, 
-        stem_density, Sphase, Qdiameter, 
-        Float64[], [Float64[],Float64[]], 
-        [Float64[],Float64[]],[Float64[],Float64[]],
-        Polynomial(),Polynomial())
-    return f
+    return Forest(PFT=PFT, NBph=NBph, Dph=Dph, Lph=Lph, RITph=RITph, 
+    stem_density=fill(densstart, ny), Sphase=1, Qdiameter=Qdiameter)
 end
 
 """
@@ -225,18 +216,9 @@ function get_decrease_values(f::Forest)
     end
 end
 
-function fit_dia(mod, data::Vector{Vector{Float64}}, harvest_year)
-    return fit_dia_int(mod, data[2], data[1], harvest_year)
-end
-
-function fit_dia(mod, data::Float64, harvest_year)
-    return fit_dia_int(mod, [0.0, harvest_year], 
-        [dia_zero, data], harvest_year)
-end
-
-function fit_dia(mod, data::Vector{Float64}, harvest_year)
-    return fit_dia_int(mod, [0.0, data[2]],
-        [dia_zero, data[1]], harvest_year)
+function fit_dia(mod, data::DataFrame, harvest_year)
+    data = dropmissing(data)
+    return fit_dia_int(mod, data[:,2], data[:,1], harvest_year)
 end
 
 function fit_dia_int(mod, xdata, ydata, harvest_year)
@@ -278,30 +260,30 @@ upper and lower bounds
 - f1 (Forest): A `Forest` object with calculated 
 variables and plotted results
 """
-function estimate_θrdi(sylvicutural_param::DataFrame, orc::DataFrame, 
-    data, start, selthin_est, max_dens, target_rdi, n_poly; mod=dia_lin)
+function estimate_θrdi(PFT, syl_par::Dict, ORC_par::Dict; mod=dia_lin)
 
-    nbyears = trunc(Int, sylvicutural_param[4,4])
+    nbyears = trunc(Int, syl_par["Lph"][end])
     # Find the best-fit parameters for the sigmoid function
-    θ_est = fit_dia(mod, data, nbyears)
-    dia_start = mod(start, θ_est)
-    rdi_start, dens_start = 
-        max_rdi(dia_start, selthin_est, max_dens, target_rdi)
-    f1 = create_forest(sylvicutural_param, 
-        θ_est, nbyears, dens_start, start; mod=mod)
+    θ_est = fit_dia(mod, DataFrame(d=syl_par["Diaph"], 
+        l= syl_par["Lph"]), nbyears)
+    diastart = mod(ORC_par["yearstart"], θ_est)
+    ORC_par["rdistart"], ORC_par["densstart"] = 
+        max_rdi(diastart, ORC_par["selfthinning"], 
+        ORC_par["densstart"], ORC_par["rdistart"])
+    f1 = create_forest(PFT, syl_par, θ_est, nbyears, 
+        ORC_par["densstart"], ORC_par["yearstart"]; mod=mod)
     fcounter = 2
     Pcounter = 2
     for year in 2:nbyears
         fcounter, Pcounter = when_to_thin(f1, fcounter, Pcounter, year)
     end
     # Calculate the RDI variable
-    f1.rdi = RDI([f1.Qdiameter, f1.stem_density], selthin_est)
+    f1.rdi = RDI([f1.Qdiameter, f1.stem_density], ORC_par["selfthinning"])
     get_decrease_values(f1)
-    f1.rdi_up = fit(f1.upper_rdi[1],f1.upper_rdi[2], n_poly)
-    f1.rdi_lo = fit(f1.lower_rdi[1],f1.lower_rdi[2], n_poly)
-    f1.pre = predict_sylviculture(f1, nbyears, selthin_est, 
-        dens_start, rdi_start)
-    #merge_previous_plots(f1, orc, nbyears)
+    f1.rdi_up = fit(f1.upper_rdi[1],f1.upper_rdi[2], ORC_par["n_poly"])
+    f1.rdi_lo = fit(f1.lower_rdi[1],f1.lower_rdi[2], ORC_par["n_poly"])
+    f1.pre = predict_sylviculture(f1, nbyears, ORC_par["selfthinning"], 
+    ORC_par["densstart"], ORC_par["rdistart"])
     return f1
 end
 

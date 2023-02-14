@@ -1,0 +1,8 @@
+Description,Recruit,Experiment
+bare_soil,None,None
+evergreen temperate conifer,No recruitement,Low RDI
+evergreen temperate conifer,No recruitement,high RDI
+evergreen temperate conifer,Recruitement,Low RDI
+deciduous temperate broadleaved,No recruitement,Low RDI
+deciduous temperate broadleaved,No recruitement,high RDI
+deciduous temperate broadleaved,Recruitement,Low RDI

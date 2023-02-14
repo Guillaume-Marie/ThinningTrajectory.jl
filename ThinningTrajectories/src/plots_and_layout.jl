@@ -149,10 +149,21 @@ end
 
 # Merge the the plots of the previous function
 # into one plot with multiple subplots
-function merge_previous_plots(f::Forest, orc::DataFrame, nbyears::Int64)
+function merge_previous_plots(f::Forest, orc::String, version::String,
+    nbyears::Int64, ORC_par::Dict; var=["DIAMETER","RDI","BA","IND"], Out="stomate",
+    recruit = "No recruitement")
     # Get the plots from the previous function
-    p1 = plot_ORCres(f, orc, "evergreen temperate conifer", "No recruitement", 
-        "Low RDI", nbyears,["RDI","BA","DIAMETER","IND"])
+    if "OCHIDEE_"*version in readdir(orc)
+        orcr = CSV.read(orc*"OCHIDEE_"*version*".csv", DataFrame)
+        var = unique(orcr[:,"var"])
+        println(orcr)
+    else
+        orcr = merge_netcdf(orc, var, Out, ORC_par)
+        CSV.write(orc*"OCHIDEE_"*version*".csv", orcr)
+        println(orcr)
+    end
+    
+    p1 = plot_ORCres(f, orcr, ORC_par["Description"][f.PFT], recruit, nbyears)
     p2 = visualize_sylviculture(f)
     # Create a new plot with the plots from the previous function
     display(plot(p2, p1, layout=(2,1), size=(750, 1500)))

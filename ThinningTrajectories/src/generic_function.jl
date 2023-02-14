@@ -12,3 +12,20 @@
 @. INT(d,n) = (d[1]/d[2])^(-1/n)
 @. NBC(d,x) = cld(log(d[1]/d[2]),log(x))
 @. DS(d,x,n) = d*x^(n)
+
+
+function asi_param(param, key, value)
+	np=length(param[key])
+	z = Vector{Union{Missing,Float64}}() # empty array
+	if np===1
+		push!(z, value)
+	else
+		for i in 1:np
+			push!(z, value[i])
+		end
+	end
+	return eval(Meta.parse("$key = $z"))
+end
+
+NaN_to_missing(x) = isnan(x) ? missing : x
+missing_to_NaN(x) = ismissing(x) ? NaN : x

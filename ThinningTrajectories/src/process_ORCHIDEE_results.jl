@@ -23,7 +23,7 @@ Out = "stomate"
 data = merge_netcdf(folder, var, Out)
 """
 function merge_netcdf(folder::String, 
-    var::Vector{String}, Out::String)
+    var::Vector{String}, Out::String, ORC_par::Dict)
 
     files = readdir(folder)
     data = DataFrame(value=Float32[],var=String[],
@@ -37,9 +37,13 @@ function merge_netcdf(folder::String,
                 dsv = ds[var[v]].var[:,:][2:end]
                 ldsv = length(dsv)
                 vi = reshape(dsv, ldsv)
-                dd = DataFrame(value=vi, var=fill(var[v],ldsv), 
-                    ver=traitement[2:end], pft=PFT[2:end], 
-                    param=parameters[2:end], time= fill(i,ldsv))
+                dd = DataFrame(
+                    value=vi, 
+                    var=fill(var[v],ldsv), 
+                    ver=ORC_par["Recruit"][2:end], 
+                    pft=ORC_par["Description"][2:end], 
+                    param=ORC_par["Experiment"][2:end], 
+                    time= fill(i,ldsv))
                 data = vcat(data, dd)
             end
         end

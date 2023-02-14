@@ -23,18 +23,19 @@ of the relative density index.
 - `rdi_lo::Polynomial`: A polynomial representing the lower limit 
 of the relative density index.
 """
-mutable struct Forest{T}
+Base.@kwdef mutable struct Forest{T}
+    PFT::Int64
     NBph::T
     Dph::T
     Lph::T
     RITph::T
-    stem_density::T
-    Sphase::Int16
-    Qdiameter::T
-    rdi::T
-    upper_rdi::Vector{T}
-    lower_rdi::Vector{T}
-    pre::Vector{T}
-    rdi_up::Polynomial
-    rdi_lo::Polynomial
+    stem_density::Vector{Float64}
+    Sphase::Int64
+    Qdiameter::Vector{Float64}
+    rdi = Float64[]
+    upper_rdi = [Float64[], Float64[]]
+    lower_rdi = [Float64[], Float64[]]
+    pre = [Float64[], Float64[]]
+    rdi_up = Polynomial()
+    rdi_lo = Polynomial()
 end
