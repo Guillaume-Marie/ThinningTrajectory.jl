@@ -2,6 +2,7 @@
 include("constant.jl")
 include("generic_function.jl")
 include("forest_def.jl")
+
 """
 # when_to_thin
 This function updates the stem density of a forest.
@@ -157,9 +158,11 @@ end
  - `f`: The created forest.
  - `nbyears`: The number of years for which the forest is simulated.
 """
-function create_forest(PFT, syl_par::Dict, θ, ny, 
-    densstart, start; mod=dia_lin)
+function create_forest(PFT, syl_par::Dict,
+    ORC_par::Dict, θ, ny; mod=dia_lin)
 
+    start = ORC_par["yearstart"][PFT]
+    densstart = ORC_par["densstart"][PFT]
     for (key, value) in syl_par
 		asi_param(syl_par, key, value) 
 	end 
@@ -260,30 +263,31 @@ upper and lower bounds
 - f1 (Forest): A `Forest` object with calculated 
 variables and plotted results
 """
-function estimate_θrdi(PFT, syl_par::Dict, ORC_par::Dict; mod=dia_lin)
+function estimate_θrdi(PFT, Sexp::Dict; mod=dia_lin)::ThinningTrajectories.Forest
 
+    syl_par = Sexp["Sylviculture"][PFT] 
+    ORC_par = Sexp["Experiment"][PFT] 
     nbyears = trunc(Int, syl_par["Lph"][end])
     # Find the best-fit parameters for the sigmoid function
     θ_est = fit_dia(mod, DataFrame(d=syl_par["Diaph"], 
         l= syl_par["Lph"]), nbyears)
-    diastart = mod(ORC_par["yearstart"], θ_est)
-    ORC_par["rdistart"], ORC_par["densstart"] = 
-        max_rdi(diastart, ORC_par["selfthinning"], 
-        ORC_par["densstart"], ORC_par["rdistart"])
-    f1 = create_forest(PFT, syl_par, θ_est, nbyears, 
-        ORC_par["densstart"], ORC_par["yearstart"]; mod=mod)
+    diastart = mod(ORC_par["yearstart"][PFT], θ_est)
+    ORC_par["rdistart"][PFT], ORC_par["densstart"][PFT] = 
+        max_rdi(diastart, ORC_par["selfthinning"][PFT], 
+        ORC_par["densstart"][PFT], ORC_par["rdistart"][PFT])
+    f1 = create_forest(PFT, syl_par, ORC_par, θ_est, nbyears; mod=mod)
     fcounter = 2
     Pcounter = 2
     for year in 2:nbyears
         fcounter, Pcounter = when_to_thin(f1, fcounter, Pcounter, year)
     end
     # Calculate the RDI variable
-    f1.rdi = RDI([f1.Qdiameter, f1.stem_density], ORC_par["selfthinning"])
+    f1.rdi = RDI([f1.Qdiameter, f1.stem_density], ORC_par["selfthinning"][PFT])
     get_decrease_values(f1)
-    f1.rdi_up = fit(f1.upper_rdi[1],f1.upper_rdi[2], ORC_par["n_poly"])
-    f1.rdi_lo = fit(f1.lower_rdi[1],f1.lower_rdi[2], ORC_par["n_poly"])
-    f1.pre = predict_sylviculture(f1, nbyears, ORC_par["selfthinning"], 
-    ORC_par["densstart"], ORC_par["rdistart"])
+    f1.rdi_up = fit(f1.upper_rdi[1],f1.upper_rdi[2], ORC_par["n_poly"][PFT])
+    f1.rdi_lo = fit(f1.lower_rdi[1],f1.lower_rdi[2], ORC_par["n_poly"][PFT])
+    f1.pre = predict_sylviculture(f1, nbyears, ORC_par["selfthinning"][PFT], 
+    ORC_par["densstart"][PFT], ORC_par["rdistart"][PFT])
     return f1
 end
 

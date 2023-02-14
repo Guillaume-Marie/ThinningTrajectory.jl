@@ -1,5 +1,22 @@
+LowRdi = Dict(
+    "name" => "LowRdi",
+    "n_poly" => fill(3,7), 
+    "rdistart" => fill(0.6,7), 
+    "densstart" => fill(100000.0,7),
+    "yearstart" => fill(5,7),
+    "selfthinning" =>  fill([1348.0, -0.57],7)
+)
 
-Syl = Dict(
+HighRdi = Dict(
+    "name" => "HighRdi",
+    "n_poly" => fill(3,7), 
+    "rdistart" => fill(0.6,7), 
+    "densstart" => fill(100000.0,7),
+    "yearstart" => fill(5,7),
+    "selfthinning" =>  fill([1348.0, -0.57],7)
+)
+
+Syl_spruce = Dict(
     "NBph" => [2.0, 2.0, missing, 2.0], 
     "RITph" => [missing, missing, 0.3, 0.55], 
     "Dph" => [2500.0, 1500.0, 200.0, missing],
@@ -7,38 +24,11 @@ Syl = Dict(
     "Diaph" => [missing, missing, missing, 45.0]
 )
 
-Sexp = Dict(
-    "PFT" => [1, 2, 3, 4, 5, 6, 7],
-    "Description" => [
-        "bare_soil", 
-        "evergreen temperate conifer",
-        "evergreen temperate conifer", 
-        "evergreen temperate conifer",
-        "deciduous temperate broadleaved",
-        "deciduous temperate broadleaved",
-        "deciduous temperate broadleaved"],
-    "Recruit" => [
-        "None", 
-        "No recruitment", 
-        "No recruitment", 
-        "Recruitment", 
-        "No recruitment", 
-        "No recruitment", 
-        "Recruitment"], 
-    "Experiment" => [
-        "None",
-        "Low Rdi",
-        "High Rdi",
-        "Low Rdi",
-        "Low Rdi",
-        "High Rdi",
-        "Low Rdi"]
+Syl_oak = Dict(
+    "NBph" => [5.0, 6.0, missing, 3.0], 
+    "RITph" => [missing, missing, 0.275, 0.4], 
+    "Dph" => [1200.0, 500.0, 80.0, missing],
+    "Lph" => [15.0, 45.0, 115.0, 124.0],
+    "Diaph" => [missing, missing, missing, 60.0]
 )
 
-ORC_par = Dict(
-    "n_poly" => 3, 
-    "rdistart" => 0.6, 
-    "densstart" => 100000.0,
-    "yearstart" => 5,
-    "selfthinning" => [1348.0, -0.57]
-)

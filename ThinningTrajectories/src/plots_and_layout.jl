@@ -1,17 +1,4 @@
 
-
-function eqpf2(name1, name2, name3, limit)
-    fun = String("eqpft(name::AbstractString, 
-                    name2::AbstractString, 
-                    name3::AbstractString, 
-                    names4::Int64) = 
-                        name == \"$name1\" && 
-                        name2 == \"$name2\" && 
-                        name3 == \"$name3\" && 
-                        names4 < $limit")
-    return @eval $(Meta.parse(fun))
-end
-
 """
 # plot_ORCres
 Visualizes forest stem density and quadratic 
@@ -39,20 +26,26 @@ v : Vector{String}
 Subplots : tuple
     A tuple of subplots.
 """
-function plot_ORCres(f::Forest, orc::DataFrame,
-            pfts::AbstractString, recruit::AbstractString, 
-            param::AbstractString, time_limit::Int64, 
-            v::Vector{String})
+function plot_ORCres(f::Forest, orc::DataFrame, 
+        Sexp::Dict, time_limit::Int64, v::Vector{String})
     # Get the data for plotting
-    dd = [
-        f.pre[1],
-        BA([f.Qdiameter,f.pre[2]]),
-        f.Qdiameter/100,
-        f.pre[2]/10000
-    ]
-    eqpf = eqpf2(pfts, recruit, param, time_limit)
-    ORC_Resf = filter([:pft,:ver, :param, :time] => eqpf, orc)
-    
+    dd = Dict(
+        "RDI" => f.pre[1],
+        "BA" => BA([f.Qdiameter,f.pre[2]]),
+        "DIAMETER" => f.Qdiameter/100,
+        "IND" => f.pre[2]/10000
+    )
+
+    recruit = Sexp["Recruit"][f.PFT]
+    pfts = Sexp["Description"][f.PFT]
+    param = Sexp["Experiment"][f.PFT]
+    ORC_Resf = filter([:pft, :ver, :param, :time] => 
+        (n1,n2, n3, n4)-> 
+            n1 == pfts && 
+            n2 == recruit && 
+            n3 == param["name"] && 
+            n4 < time_limit, orc)
+
     # Calculate the number of rows to use in the subplot grid
     nrows = ceil(Int,0.5*length(v))
     
@@ -81,7 +74,7 @@ function plot_ORCres(f::Forest, orc::DataFrame,
                            legend=show_legend, 
                            label="ORC",
                            title=v[i])
-            plot!(dd[i], ylim=(0.0,maxval), 
+            plot!(dd[v[i]], ylim=(0.0,maxval), 
                   legend=show_legend, 
                   label = "THE")
         end
@@ -150,20 +143,18 @@ end
 # Merge the the plots of the previous function
 # into one plot with multiple subplots
 function merge_previous_plots(f::Forest, orc::String, version::String,
-    nbyears::Int64, ORC_par::Dict; var=["DIAMETER","RDI","BA","IND"], Out="stomate",
-    recruit = "No recruitement")
+    nbyears::Int64, Sexp::Dict; 
+    var=["RDI","DIAMETER","BA","IND"]::Vector{String}, Out="stomate")::Nothing
     # Get the plots from the previous function
     if "OCHIDEE_"*version in readdir(orc)
         orcr = CSV.read(orc*"OCHIDEE_"*version*".csv", DataFrame)
         var = unique(orcr[:,"var"])
-        println(orcr)
     else
-        orcr = merge_netcdf(orc, var, Out, ORC_par)
+        orcr = merge_netcdf(orc, var, Out, Sexp)
         CSV.write(orc*"OCHIDEE_"*version*".csv", orcr)
-        println(orcr)
     end
     
-    p1 = plot_ORCres(f, orcr, ORC_par["Description"][f.PFT], recruit, nbyears)
+    p1 = plot_ORCres(f, orcr, Sexp, nbyears, var)
     p2 = visualize_sylviculture(f)
     # Create a new plot with the plots from the previous function
     display(plot(p2, p1, layout=(2,1), size=(750, 1500)))

@@ -4,14 +4,10 @@ using ThinningTrajectories
 using Dash
 using PlotlyJS
 using DataFrames
+
+
 include("Parameters.jl")
-
 ORCres_folder="/home/guigeek/Julia_script/orc/YE/"
-
-dd1 = ThinningTrajectories.estimate_θrdi(2, Syl, ORC_par)
-
-ThinningTrajectories.merge_previous_plots(dd1, ORCres_folder, "v0.1", 80, Sexp)
-
 n_poly = [2,3,4,5]
 rdistart = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9]
 fertility = [30.1,35.1,40.1,45.1,50.1,55.1,60.1,65.1]
@@ -54,8 +50,7 @@ callback!(
     Input("rdistart-slider", "value"),
     Input("fertility-slider", "value")
 ) do npoly, rdistart, fertility
-    dd1 = estimate_θrdi(I1EC, ORC_Res, fertility, 5, 
-        [1348.0, -0.57], 100000.0, rdistart, npoly)
+    dd1 = ThinningTrajectories.estimate_θrdi(pft)
     ddp = stack(DataFrame(Qdiameter=dd1.Qdiameter, 
         density_the=dd1.stem_density, 
         density_pred=dd1.pre[2]), 2:3)
