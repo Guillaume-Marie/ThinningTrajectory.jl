@@ -189,5 +189,6 @@ callback!(
     return [pp1 pp2]
 end
 
-run_server(app, "0.0.0.0", debug = true)
+port = parse(Int64, ENV["PORT"])
+run_server(app, "0.0.0.0", port)
 
