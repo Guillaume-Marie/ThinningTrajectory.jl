@@ -1,4 +1,4 @@
-# thinning-trajectory
+# ThinningTrajectory.jl
 A tool that help translating forest management rules into Relative density curve usable into land surface model such as ORCHIDEE
 
 ## Contents
