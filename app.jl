@@ -75,12 +75,16 @@ value=VALS[i])
 app = dash()
 # Layout of the app which plot stem-density against quadratic diameter 
 # and the results of an ORC model. THe user can select the n_poly parameter from 2 to 5. 
-app.layout = html_div() do    
+app.layout = html_div() do   
+    html_h1("Thinning trajectories"),
+    html_h2("Sylviculture setup"), 
     html_div(style = Dict("columnCount" => 5, "rowCount" => 5)) do
         vcat(labels, inputs)
     end,
     dcc_graph(id = "graph1"),
-    html_div(style = Dict("columnCount" => 2, "rowCount" => 2)) do
+    html_h2("ORCHIDEE model setup"),
+    html_div(style = Dict("columnCount" => 4, "rowCount" => 2)) do
+        html_div("Number of polynomes: "),
         dcc_slider(
             id = "input_npoly",
             min = minimum(n_poly),
@@ -88,7 +92,9 @@ app.layout = html_div() do
             marks = Dict([Symbol(v) => Symbol(v) for v in n_poly]),
             value = 3,
             step = nothing,
-        ),
+        ),        
+        html_div("RDI value at the start\n
+        of a rotation: "),
         dcc_slider(
             id = "input_rdistart",
             min = minimum(rdistart),
@@ -97,6 +103,8 @@ app.layout = html_div() do
             value = 0.6,
             step = nothing,
         ),
+        html_div("Year value at the start\n
+        of a rotation: "),        
         dcc_slider(
             id = "input_yearstart",
             min = 1,
@@ -104,7 +112,8 @@ app.layout = html_div() do
             marks = Dict([Symbol(v) => Symbol(v) for v in 1:15]),
             value = 3,
             step = nothing,
-        ),   
+        ),        
+        html_div("Which PFT:"),   
         dcc_slider(
             id = "input_pft",
             min = 1,
@@ -113,6 +122,7 @@ app.layout = html_div() do
             value = 3,
             step = nothing,
         )
+
     end 
 end
 
@@ -147,11 +157,23 @@ callback!(
 
     ddp1 = stack(DataFrame(Qdiameter=dd1.Qdiameter, 
         density_the=dd1.stem_density, 
-        density_pred=dd1.pre[2]), 2:3)
+        density_pred=dd1.pre[2],), 2:3)
 
     ddp2 = stack(DataFrame(Qdiameter=dd1.Qdiameter, 
         rdi_the=dd1.rdi, 
-        rdi_pred=dd1.pre[1]), 2:3)   
+        rdi_pred=dd1.pre[1]), 2:3) 
+
+    up=   @. dd1.rdi_up(1:45)
+    lo=   @. dd1.rdi_lo(1:45)
+    ddp2 = vcat(ddp2, DataFrame(Qdiameter=1:45, value=up, variable="rdi_upper"))
+    ddp2 = vcat(ddp2, DataFrame(Qdiameter=1:45, value=lo, variable="rdi_lower"))
+
+    #ddp2 = vcat(ddp2, DataFrame(Qdiameter=dd1.upper_rdi[1], value=dd1.upper_rdi[2], variable="rdi_upper"))
+    #ddp2 = vcat(ddp2, DataFrame(Qdiameter=dd1.lower_rdi[1], value=dd1.lower_rdi[2], variable="rdi_lower"))
+        
+    ddp3 = stack(DataFrame(Qdiameter=dd1.Qdiameter, 
+        BA_the=ThinningTrajectories.BA([dd1.Qdiameter,dd1.stem_density]), 
+        BA_pred=ThinningTrajectories.BA([dd1.Qdiameter,dd1.pre[2]])), 2:3)  
 
     pp1 = plot(
         ddp1,
@@ -183,10 +205,26 @@ callback!(
         y = :value,
         group= :variable,
         mode = "line"
+    )    
+    pp3 = plot(
+        ddp3,
+        Layout(
+        xaxis_title = "Quadratic diameter (cm)",
+        yaxis_title = "Baseal area (m3/ha)",
+        legend_x = 0,
+        legend_y = 1,
+        hovermode = "closest",
+        transition_duration = 500
+        ),
+        x = :Qdiameter,
+        y = :value,
+        group= :variable,
+        mode = "line"
     )
-    return [pp1 pp2]
+    return [pp1 pp2 pp3]
 end
 
-port = parse(Int64, ENV["PORT"])
-run_server(app, "0.0.0.0", port)
+#port = parse(Int64, ENV["PORT"])
+#run_server(app, "0.0.0.0", port)
 
+run_server(app, "0.0.0.0", debug=true)

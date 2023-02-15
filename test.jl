@@ -1,7 +1,7 @@
 
 push!(LOAD_PATH, "ThinningTrajectories/")
 using ThinningTrajectories
-
+using DataFrames
 include("Experiment_setup.jl")
 ORCres_folder="/home/guigeek/Julia_script/orc/YE/"
 
