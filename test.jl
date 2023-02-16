@@ -3,11 +3,11 @@ push!(LOAD_PATH, "ThinningTrajectories/")
 using ThinningTrajectories
 using DataFrames
 include("Experiment_setup.jl")
-ORCres_folder="/home/guigeek/Julia_script/orc/YE/"
+ORCres_folder="/home/guigeek/Julia_script/orc/YE_v0.2/"
 
 # evergreen temperate conifer : PFT 2,3,4
 spruce = ThinningTrajectories.estimate_θrdi(3, Sexp)
-ThinningTrajectories.merge_previous_plots(spruce, ORCres_folder, "v0.1", 80, Sexp)
+ThinningTrajectories.merge_previous_plots(spruce, ORCres_folder, "v0.2", 80, Sexp)
 
 # deciduous temperate broadleaved : PFT 5,6,7
 oak = ThinningTrajectories.estimate_θrdi(6, Sexp)

@@ -2,10 +2,11 @@
 using Dash
 using PlotlyJS
 using DataFrames
-
-include("ThinningTrajectories/src/ThinningTrajectories.jl")
+using Polynomials
+using LsqFit
+ 
+include("ThinningTrajectories/src/thinnig_trajectories.jl")
 include("Experiment_setup.jl")
-
 
 n_poly = [2,3,4,5]
 rdistart = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9]
@@ -128,7 +129,7 @@ end
 
 callback!(
     app,
-    Output("graph1", "figure"), 
+    Output("graph1", "figure"),    
     [Input("input_$i", "value") for i in TYPES_all]
 ) do NBsh,NBed,NBma,NBha,RITsh,RITed,RITma,RITha,Dsh,
     Ded,Dma,Dha,Lsh,Led,Lma,Lha,DIAsh,DIAed,DIAma,DIAha,
