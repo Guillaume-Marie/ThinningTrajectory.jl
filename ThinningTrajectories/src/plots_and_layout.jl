@@ -30,10 +30,10 @@ function plot_ORCres(f::Forest, orc::DataFrame,
         Sexp::Dict, time_limit::Int64, v::Vector{String})
     # Get the data for plotting
     dd = Dict(
-        "RDI" => f.pre[1],
-        "BA" => BA([f.Qdiameter,f.pre[2]]),
-        "DIAMETER" => f.Qdiameter/100,
-        "IND" => f.pre[2]/10000
+        "RDI" => [f.pre[1],:identity],
+        "BA" => [BA([f.Qdiameter,f.pre[2]]),:identity],
+        "DIA_DOM" => [f.Qdiameter/100,:identity],
+        "IND" => [f.pre[2]/10000,:indentity]
     )
 
     recruit = Sexp["Recruit"][f.PFT]
@@ -60,8 +60,8 @@ function plot_ORCres(f::Forest, orc::DataFrame,
         ORC_r = filter(:var=>(==(v[i])), ORC_Resf)
         
         # Calculate the max value for the y-axis of each subplot
-        maxval = maximum(ORC_r[:,"value"]) + 
-            0.25 * maximum(ORC_r[:,"value"])
+        maxval = maximum(dd[v[i]][1]) + 
+            0.25 * maximum(dd[v[i]][1])
         
         # Set show_legend to true for the last subplot
         show_legend = (i==length(v)) ? true : false
@@ -70,12 +70,14 @@ function plot_ORCres(f::Forest, orc::DataFrame,
         subplots[i] = begin
             @df ORC_r plot(:time, :value,
                            group= (:param), 
-                           ylim=(0.0,maxval), 
+                           ylim=(0.0,maxval),
+                           yaxis= dd[v[i]][2], 
                            legend=show_legend, 
                            label="ORC",
                            title=v[i])
-            plot!(dd[v[i]], ylim=(0.0,maxval), 
-                  legend=show_legend, 
+            plot!(dd[v[i]][1], ylim=(0.0,maxval), 
+                  legend=show_legend,
+                  yaxis= dd[v[i]][2],
                   label = "THE")
         end
     end
@@ -144,7 +146,9 @@ end
 # into one plot with multiple subplots
 function merge_previous_plots(f::Forest, orc::String, version::String,
     nbyears::Int64, Sexp::Dict; 
-    var=["RDI","DIAMETER","BA","IND"]::Vector{String}, Out="stomate")::Nothing
+    var=["RDI","DIA_DOM","BA","IND"]::Vector{String}, 
+    Out="stomate")::Nothing
+
     # Get the plots from the previous function
     if "OCHIDEE_"*version in readdir(orc)
         orcr = CSV.read(orc*"OCHIDEE_"*version*".csv", DataFrame)
@@ -159,4 +163,3 @@ function merge_previous_plots(f::Forest, orc::String, version::String,
     # Create a new plot with the plots from the previous function
     display(plot(p2, p1, layout=(2,1), size=(750, 1500)))
 end
-

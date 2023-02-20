@@ -20,18 +20,19 @@ Sexp = Dict(
             Syl_oak),   
     "Recruit" => [
         "None", 
-        "No recruitment", 
-        "No recruitment", 
-        "Recruitment", 
-        "No recruitment", 
-        "No recruitment", 
-        "Recruitment"], 
+        "Low Taumin", 
+        "Medium Taumin", 
+        "High Taumin", 
+        "Low Taumin", 
+        "Medium Taumin", 
+        "Low Taumin"], 
     "Experiment" => (
-        LowRdi,
-        LowRdi,
-        HighRdi,
-        LowRdi,
-        LowRdi,
-        HighRdi,
-        LowRdi)
+        None,
+        HighRdi_S,
+        HighRdi_S,
+        HighRdi_S,
+        HighRdi_O,
+        HighRdi_O,
+        HighRdi_O)
+    )
 )

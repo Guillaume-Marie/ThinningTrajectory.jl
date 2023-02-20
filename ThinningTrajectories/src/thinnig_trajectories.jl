@@ -163,11 +163,14 @@ function create_forest(PFT, syl_par::Dict,
 
     start = ORC_par["yearstart"][PFT]
     densstart = ORC_par["densstart"][PFT]
+    DOM_ratio = ORC_par["DOM_ratio"][PFT]
     for (key, value) in syl_par
 		asi_param(syl_par, key, value) 
 	end 
-    Qdiameter = collect(mod(start:ny+(start-1), θ))
-    Qdiameter = replace_negatives_with_zeros(Qdiameter)
+    Qdiameter_Dom = collect(mod(start:ny+(start-1), θ))
+    Qdiameter_Dom = replace_negatives_with_zeros(Qdiameter_Dom)
+    Qdiameter = DIAREF(Qdiameter_Dom,[DOM_ratio, Qdiameter_Dom[end]])
+
     for i in eachindex(Dph)
         RITph[i], NBph[i], Dph[i] = (i == 1) ?
         thin_param(Dph[i],densstart,RITph[i],NBph[i]) :

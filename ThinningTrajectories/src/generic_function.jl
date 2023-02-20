@@ -12,7 +12,8 @@
 @. INT(d,n) = (d[1]/d[2])^(-1/n)
 @. NBC(d,x) = cld(log(d[1]/d[2]),log(x))
 @. DS(d,x,n) = d*x^(n)
-
+@. DIADOM(d,θ) = (θ[1]*(d/θ[2]) + 1)*d
+@. DIAREF(d,θ) = (θ[1]*(d/θ[2]))*d
 
 function asi_param(param, key, value)
 	np=length(param[key])
