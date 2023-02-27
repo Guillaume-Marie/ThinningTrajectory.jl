@@ -27,12 +27,12 @@ Sexp = Dict(
         "Medium Taumax", 
         "Low Taumax"], 
     "Experiment" => (
-        None,
+        HighRdi_S,
         HighRdi_S,
         HighRdi_S,
         HighRdi_S,
         HighRdi_O,
         HighRdi_O,
-        HighRdi_O)
+        HighRdi_O
     )
 )

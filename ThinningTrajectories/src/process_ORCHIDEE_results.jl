@@ -1,4 +1,6 @@
 
+const circclass = ["understory", "sub-dominant", "dominant"]
+
 """
 # merge_netcdf
 The function `merge_netcdf` reads netcdf files from 
@@ -58,3 +60,41 @@ function merge_netcdf(folder::String,
     return data
 end
 
+function merge_netcdf_4dim(folder::String, 
+    var::Vector{String}, Out::String, Sexp::Dict)
+
+    par_dict=Sexp["Experiment"]
+    params = String[]
+    for i in eachindex(par_dict)
+        push!(params, par_dict[i]["name"])
+    end
+
+    files = readdir(folder)
+    data = DataFrame(value=Float32[],var=String[],
+    inc=String[], ver=String[], pft=String[], 
+    param=String[], time=Int64[])
+    i=1
+    for file in files
+        if occursin(Out, file)
+            ds = Dataset(joinpath(folder, file))
+            for v in eachindex(var)
+                for inc in 1:3
+                    dsv = ds[var[v]].var[:,:,:,inc,:][2:end]
+                    ldsv = length(dsv)
+                    vi = reshape(dsv, ldsv)
+                    dd = DataFrame(
+                        value=vi, 
+                        var=fill(var[v],ldsv), 
+                        inc = fill(circclass[inc],ldsv),
+                        ver=Sexp["Recruit"][2:end], 
+                        pft=Sexp["Description"][2:end], 
+                        param=params[2:end], 
+                        time= fill(i,ldsv))
+                    data = vcat(data, dd)
+                end
+            end
+        end
+        i += 1
+    end
+    return data
+end

@@ -32,7 +32,7 @@ function plot_ORCres(f::Forest, orc::DataFrame,
     dd = Dict(
         "RDI" => [f.pre[1],:identity],
         "BA" => [BA([f.Qdiameter,f.pre[2]]),:identity],
-        "DIA_DOM" => [f.Qdiameter/100,:identity],
+        "DIAMETER" => [f.Qdiameter/100,:identity],
         "IND" => [f.pre[2]/10000,:indentity]
     )
 
@@ -144,11 +144,12 @@ end
 
 # Merge the the plots of the previous function
 # into one plot with multiple subplots
-function merge_previous_plots(f::Forest, orc::String, version::String,
-    nbyears::Int64, Sexp::Dict; 
-    var=["RDI","DIA_DOM","BA","IND"]::Vector{String}, 
+function merge_previous_plots(f::Forest, orc::String, 
+    version::String, Sexp::Dict; 
+    var=["RDI","DIAMETER","BA","IND"]::Vector{String}, 
     Out="stomate")::Nothing
 
+    nbyears = Sexp["Experiment"][f.PFT]["rotation_length"][f.PFT]
     # Get the plots from the previous function
     if "OCHIDEE_"*version in readdir(orc)
         orcr = CSV.read(orc*"OCHIDEE_"*version*".csv", DataFrame)
