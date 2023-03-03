@@ -27,14 +27,26 @@ Subplots : tuple
     A tuple of subplots.
 """
 function plot_ORCres(f::Forest, orc::DataFrame, 
-        Sexp::Dict, time_limit::Int64, v::Vector{String})
+        Sexp::Dict, time_limit::Int64, v::Vector{String}; poly_param)
     # Get the data for plotting
-    dd = Dict(
-        "RDI" => [f.pre[1],:identity],
-        "BA" => [BA([f.Qdiameter,f.pre[2]]),:identity],
-        "DIAMETER" => [f.Qdiameter/100,:identity],
-        "IND" => [f.pre[2]/10000,:indentity]
-    )
+    
+    if poly_param === nothing
+        poly_param_lo = f.rdi_lo
+        poly_param_up = f.rdi_up
+    else
+        poly_param_up = Polynomial(poly_param[1])
+        poly_param_lo = Polynomial(poly_param[2])
+    end
+
+    rdilo= fill(0.0, length(f.Qdiameter))
+    for i in 1:length(f.Qdiameter)
+        rdilo[i] = poly_param_lo(f.Qdiameter[i])
+    end
+
+    rdiup= fill(0.0, length(f.Qdiameter))
+    for i in 1:length(f.Qdiameter)
+        rdiup[i] = poly_param_up(f.Qdiameter[i])
+    end   
 
     recruit = Sexp["Recruit"][f.PFT]
     pfts = Sexp["Description"][f.PFT]
@@ -45,6 +57,27 @@ function plot_ORCres(f::Forest, orc::DataFrame,
             n2 == recruit && 
             n3 == param["name"] && 
             n4 < time_limit, orc)
+
+    ORC_dia = filter(:var=>(==("DIAMETER_MAN")), ORC_Resf)
+
+    rdilo2= fill(0.0, length(ORC_dia[:,"value"]))
+    for i in 1:length(ORC_dia[:,"value"])
+        rdilo2[i] = poly_param_lo(ORC_dia[i,"value"]*100)
+    end
+
+    rdiup2= fill(0.0, length(ORC_dia[:,"value"]))
+    for i in 1:length(ORC_dia[:,"value"])
+        rdiup2[i] = poly_param_up(ORC_dia[i,"value"]*100)
+    end   
+
+    dd = Dict(
+        "RDI" => [f.pre[1],:identity],
+        "RDI_TARGET_UPPER" => [[rdiup,rdiup2],:identity],
+        "RDI_TARGET_LOWER" => [[rdilo,rdilo2],:identity],
+        "BA" => [BA([f.Qdiameter,f.pre[2]]),:identity],
+        "DIAMETER_MAN" => [f.Qdiameter/100,:identity],
+        "IND" => [f.pre[2]/10000,:indentity]
+    )   
 
     # Calculate the number of rows to use in the subplot grid
     nrows = ceil(Int,0.5*length(v))
@@ -60,8 +93,13 @@ function plot_ORCres(f::Forest, orc::DataFrame,
         ORC_r = filter(:var=>(==(v[i])), ORC_Resf)
         
         # Calculate the max value for the y-axis of each subplot
-        maxval = maximum(dd[v[i]][1]) + 
-            0.25 * maximum(dd[v[i]][1])
+        mm = dd[v[i]][1]
+ 
+        if mm isa Vector{Vector{Float64}}
+            mm = mm[2]
+            println(mm)
+        end
+        maxval = maximum(mm) + 0.3 * maximum(mm)
         
         # Set show_legend to true for the last subplot
         show_legend = (i==length(v)) ? true : false
@@ -84,7 +122,7 @@ function plot_ORCres(f::Forest, orc::DataFrame,
     
     # Display the subplots in a grid layout 
     #with dimensions specified by nrows
-    return plot(subplots..., layout=(nrows,2), size=(375*nrows, 750))
+    return plot(subplots..., layout=(nrows,2), size=(375*nrows, 700))
 end
 
 """
@@ -146,8 +184,9 @@ end
 # into one plot with multiple subplots
 function merge_previous_plots(f::Forest, orc::String, 
     version::String, Sexp::Dict; 
-    var=["RDI","DIAMETER","BA","IND"]::Vector{String}, 
-    Out="stomate")::Nothing
+    var=["RDI","RDI_TARGET_UPPER","RDI_TARGET_LOWER","DIAMETER_MAN","BA","IND"]::Vector{String}, 
+    Out="stomate",
+    poly_param= nothing)::Nothing
 
     nbyears = Sexp["Experiment"][f.PFT]["rotation_length"][f.PFT]
     # Get the plots from the previous function
@@ -159,8 +198,8 @@ function merge_previous_plots(f::Forest, orc::String,
         CSV.write(orc*"OCHIDEE_"*version*".csv", orcr)
     end
     
-    p1 = plot_ORCres(f, orcr, Sexp, nbyears, var)
+    p1 = plot_ORCres(f, orcr, Sexp, nbyears, var; poly_param=poly_param)
     p2 = visualize_sylviculture(f)
     # Create a new plot with the plots from the previous function
-    display(plot(p2, p1, layout=(2,1), size=(750, 1500)))
+    display(plot(p2, p1, layout=(2,1), size=(1000, 1700)))
 end

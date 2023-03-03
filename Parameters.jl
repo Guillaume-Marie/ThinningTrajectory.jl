@@ -1,7 +1,7 @@
 HighRdi_S = Dict(
-    "name" => "HighRdi",
+    "name" => "HighRdi_S",
     "n_poly" => fill(3,7), 
-    "rdistart" => fill(0.6,7), 
+    "rdistart" => fill(0.4,7), 
     "densstart" => fill(200000.0,7),
     "yearstart" => fill(5,7),
     "DOM_ratio" => fill(0.5,7),    
@@ -10,7 +10,7 @@ HighRdi_S = Dict(
 )
 
 HighRdi_O = Dict(
-    "name" => "HighRdi",
+    "name" => "HighRdi_O",
     "n_poly" => fill(3,7), 
     "rdistart" => fill(0.6,7), 
     "densstart" => fill(200000.0,7),
