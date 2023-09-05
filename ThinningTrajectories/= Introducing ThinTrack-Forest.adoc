@@ -1,0 +1,67 @@
+= Introducing ThinTrack-Forest
+Guillaume Marie
+:revealjsdir: node_modules/reveal.js
+:revealjs_theme: solarized
+:icons: font
+:source-highlighter: highlightjs
+
+== Introduction
+   
+* Shared concern: Impact of silviculture on tree growth in a context of climate change
+* Differences between foresters and forest modelers
+ - Divergent objectives and motivations
+ - Challenges in communication and knowledge sharing
+* Major obstacles
+ - Variables of interest, ex. Biomass vs Wood volume
+ - Fundamental concepts of forest representation individues vs land surface
+ - Specific vocabulary ex. anthropic perturbation vs sylvicultural actions
+* Goal of the ThinTrack-Forest application
+ - Translate silvicultural rules into data that can be assimilated by the land surface model ORCHIDEE
+ - Create a scientific tool to facilitate communication and collaboration among different stakeholders
+
+ 
+== Problems and challenges
+ 
+ * Problems and challenges
+ * Significance of the problems
+ 
+== ThinTrack-Forest: Overview
+ 
+ * Main purpose and objectives
+ 
+== Key Features
+ 
+ * Important features
+ * Examples or screenshots
+ 
+== Technical Details
+ 
+ * Technologies and programming languages
+ * Frameworks, libraries, or APIs
+ 
+== How ThinTrack-Forest Works
+ 
+ * Workflow and user experience
+ * Diagrams or flowcharts
+ 
+== Application Use Cases
+ 
+ * Real-world examples or scenarios
+ * Advantages of using the application
+ 
+== Future Development
+ 
+ * Future updates, features, or improvements
+ * Potential collaborations or partnerships
+ 
+== Conclusion
+ 
+ * Summarize main points
+ * Highlight benefits
+ * Encourage audience participation
+ 
+== Q&A Session
+ 
+ Time for questions and answers.
+ 
+

@@ -135,12 +135,13 @@ on separate plots, each overlayed with stem density data.
 f: Forest 
     The forest to be visualized. 
 """
-function visualize_sylviculture(f::Forest) 
+function visualize_sylviculture(f::Forest; mergeP = false) 
     
     # Calculate the maximums of forest data
     dia_max = maximum(f.Qdiameter.+5.0)
     dens_max = maximum(f.stem_density.+500.0)
-    rdi_max = maximum(f.upper_rdi[2].+0.1)
+    #rdi_max = maximum(f.upper_rdi[2].+0.1)
+    rdi_max = 1.0
 
     # Create subplots for a dual-axis plot
     subplots = repeat([plot()], 2)
@@ -177,7 +178,30 @@ function visualize_sylviculture(f::Forest)
     subplots[2] = plll
 
     # Create and display the final dual-axis plot
-    return plot(subplots..., layout=(2,1), size=(500, 750))
+    if mergeP === true
+        return plot(subplots..., layout=(2,1), size=(500, 750))
+    else
+        display(plot(subplots..., layout=(2,1), size=(500, 750)))
+    end 
+end
+
+function visualize_RDIextraction(f::Forest) 
+        # Calculate the maximums of forest data
+        dia_max = maximum(f.Qdiameter.+5.0)
+        rdi_max = 1.0
+    
+        # Create subplots for a dual-axis plot
+        subplots = repeat([plot()], 2)
+        pl = plot()
+
+        plot!(f.Qdiameter,f.rdi, xlim=(0,dia_max), 
+        ylim=(0,rdi_max), label="RDI",legend=:topright)
+        plot!(f.upper_rdi[1],f.upper_rdi[2], xlim=(0,dia_max), 
+        ylim=(0,rdi_max), label="RDI",legend=:topright)
+        plot!(f.lower_rdi[1],f.lower_rdi[2], xlim=(0,dia_max), 
+        ylim=(0,rdi_max), label="RDI",legend=:topright)
+
+        display(plot(pl))
 end
 
 # Merge the the plots of the previous function
@@ -199,7 +223,7 @@ function merge_previous_plots(f::Forest, orc::String,
     end
     
     p1 = plot_ORCres(f, orcr, Sexp, nbyears, var; poly_param=poly_param)
-    p2 = visualize_sylviculture(f)
+    p2 = visualize_sylviculture(f, mergeP = true)
     # Create a new plot with the plots from the previous function
     display(plot(p2, p1, layout=(2,1), size=(1000, 1700)))
 end

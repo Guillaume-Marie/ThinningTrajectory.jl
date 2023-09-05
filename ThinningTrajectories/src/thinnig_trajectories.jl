@@ -208,16 +208,14 @@ function max_rdi(d, θ, nbtree_max, target_rdi)
 end 
 
 function get_decrease_values(f::Forest)
-    for i in 2:length(f.rdi)
-        # Si la valeur actuelle est inférieure 
-        #ou égale à 90% de la valeur précédente
-        if f.rdi[i] <= f.rdi[i-1] * 0.9 
-            # Ajoute la valeur actuelle au 
-            #tableau des valeurs en baisse
-            push!(f.upper_rdi[2], f.rdi[i-1]) 
+    for i in 2:(length(f.rdi)-1)
+        if f.rdi[i] <= f.rdi[i-1] && f.rdi[i] <= f.rdi[i+1]
             push!(f.lower_rdi[2], f.rdi[i])
-            push!(f.upper_rdi[1], f.Qdiameter[i-1])
             push!(f.lower_rdi[1], f.Qdiameter[i])   
+        end
+        if f.rdi[i] > f.rdi[i-1] && f.rdi[i] > f.rdi[i+1]
+            push!(f.upper_rdi[2], f.rdi[i]) 
+            push!(f.upper_rdi[1], f.Qdiameter[i])  
         end
     end
 end
